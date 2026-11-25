@@ -1,0 +1,4 @@
+interface:
+  default_prompt: "使用 $solidworks-residue-cleanup，检查 SOLIDWORKS 卸载后还剩哪些文件、服务和安装记录。"
+  short_description: "调查安装失败或卸载后的残留，核实关联组件归属并按授权范围清理"
+  display_name: "SOLIDWORKS 卸载残留清理"

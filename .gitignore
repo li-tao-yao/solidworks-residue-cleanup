@@ -1,0 +1,15 @@
+# Local evidence and rollback files
+*.json
+*.reg
+*.log
+residue-report-*
+reports/
+backups/
+desktop.ini
+Thumbs.db
+.env
+.env.*
+*.lic
+*.bak
+*.etl
+*.dmp
