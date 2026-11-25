@@ -1,8 +1,10 @@
 function Get-ProductCategory([string]$Label) {
-    if ($Label -match 'SOLIDWORKS|eDrawings|SolidNetWork|TEW_SQLEXPRESS|\bsld(?:works|im)\b') {
+    if ([string]::IsNullOrWhiteSpace($Label)) { return $null }
+    if ($Label -match '\bMySQL\b') { return $null }
+    if ($Label -match 'SOLIDWORKS|eDrawings|SolidNetWork|TEW_SQLEXPRESS|Seemage|Dassault\s+Syst|\b(?:sld(?:works|im)|ewserver|swlmwiz|swactwiz)\b') {
         return 'ProductCandidate'
     }
-    if ($Label -match '\bSQL Server\b|^RsFx[0-9]+$|^SQL(?:Browser|Writer)$|\bFlexNet\b') {
+    if ($Label -match '\bSQL Server\b|\bRsFx[0-9]+\b|\bSQL(?:Browser|Writer)\b|\bFlexNet\b') {
         return 'SharedComponent'
     }
     return $null
@@ -23,18 +25,21 @@ function Get-CurrentMsiState([string]$ProductCode) {
 function Get-MsiProductEvidence($Properties, [string]$PackedCode, [string]$Scope) {
     $name = [string]$Properties.GetValue('DisplayName')
     $kind = Get-ProductCategory $name
-    if (!$kind) { return }
+    if (-not $kind) { return }
     $guid = ConvertFrom-PackedProductCode $PackedCode
     $cache = $Properties.GetValue('LocalPackage')
+    $cachePath = if ($cache) { [string]$cache } else { $null }
     [pscustomobject]@{
         Name = $name
         Category = $kind
         ProductCode = $guid
         RecordScope = $Scope
         CurrentContextState = Get-CurrentMsiState $guid
-        CacheExists = if ($cache) { Test-Path -LiteralPath $cache } else { $false }
+        LocalPackage = $cachePath
+        CacheExists = if ($cachePath) { Test-Path -LiteralPath $cachePath -PathType Leaf } else { $false }
         MachineUninstall64 = Test-Path -LiteralPath "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$guid"
         MachineUninstall32 = Test-Path -LiteralPath "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$guid"
+        UserUninstall = Test-Path -LiteralPath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$guid"
     }
 }
 
@@ -43,7 +48,7 @@ function Write-NewAuditFile([string]$Path, [string]$Json) {
     if ([IO.Path]::GetExtension($nativePath) -ine '.json') { throw 'Choose a new .json file.' }
     $stream = [IO.File]::Open($nativePath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
     try {
-        $bytes = [Text.Encoding]::UTF8.GetBytes($Json)
+        $bytes = (New-Object Text.UTF8Encoding($false)).GetBytes($Json)
         $stream.Write($bytes, 0, $bytes.Length)
     } finally { $stream.Dispose() }
 }
